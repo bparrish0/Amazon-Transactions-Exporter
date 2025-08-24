@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         Amazon Transactions Exporter
-// @version      0.5.0
+// @version      0.6.0
 // @description  Export Amazon payment transactions to JSON/CSV
 // @author       brandonp0, based on Amazon Orders export by IeuanK
-// @url          https://github.com/IeuanK/AmazonExporter/raw/main/AmazonTransactionsExporter.user.js
-// @updateURL    https://github.com/IeuanK/AmazonExporter/raw/main/AmazonTransactionsExporter.user.js
-// @downloadURL  https://github.com/IeuanK/AmazonExporter/raw/main/AmazonTransactionsExporter.user.js
-// @supportURL   https://github.com/IeuanK/AmazonExporter/issues
+// @url          https://github.com/bparrish0/Amazon-Transactions-Exporter/raw/main/AmazonTransactionsExporter.user.js
+// @updateURL    https://github.com/bparrish0/Amazon-Transactions-Exporter/raw/main/AmazonTransactionsExporter.user.js
+// @downloadURL  https://github.com/bparrish0/Amazon-Transactions-Exporter/raw/main/AmazonTransactionsExporter.user.js
+// @supportURL   https://github.com/bparrish0/Amazon-Transactions-Exporter/issues
 // @match        https://www.amazon.com/cpe/yourpayments/transactions*
 // @match        https://www.amazon.de/cpe/yourpayments/transactions*
 // @match        https://www.amazon.co.uk/cpe/yourpayments/transactions*

@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Amazon Transactions Exporter
-// @version      0.6.0
+// @version      0.7.0
 // @description  Export Amazon payment transactions to JSON/CSV
 // @author       brandonp0, based on Amazon Orders export by IeuanK
 // @url          https://github.com/bparrish0/Amazon-Transactions-Exporter/raw/main/AmazonTransactionsExporter.user.js
@@ -272,6 +272,38 @@
         }
     };
 
+    // Filter transactions by amount
+    const filterTransactionsByAmount = (targetAmount) => {
+        const filteredTransactions = {};
+        Object.keys(state.transactions).forEach(key => {
+            const transaction = state.transactions[key];
+            if (Math.abs(transaction.amount) === Math.abs(targetAmount)) {
+                filteredTransactions[key] = transaction;
+            }
+        });
+        return filteredTransactions;
+    };
+
+    // Show filtered transactions in a modal
+    const showFilteredTransactions = (amount) => {
+        const filteredTransactions = filterTransactionsByAmount(amount);
+        
+        if (Object.keys(filteredTransactions).length === 0) {
+            alert(`No transactions found for amount $${amount.toFixed(2)}`);
+            return;
+        }
+
+        // Create filtered data object
+        const filteredData = {
+            ...state,
+            transactions: filteredTransactions,
+            total: Object.keys(filteredTransactions).length
+        };
+
+        const filteredCSV = getCSV(filteredData);
+        createPreviewModal(filteredCSV, "csv");
+    };
+
     // Data capture
     const capturePage = async (captureButton, enableButton = true, isMultiPage = false, pageInfo = null) => {
         // Initialize tracking
@@ -494,6 +526,10 @@
 
         if (enableButton) {
             captureButton.disabled = false;
+            // Update panel UI to show search box if transactions were captured
+            if (Object.keys(newTransactions).length > 0) {
+                updatePanelUI(document.querySelector(".amazon-transactions-exporter-panel"));
+            }
         }
         return Object.keys(newTransactions).length > 0;
     };
@@ -796,27 +832,40 @@
         overflow: auto;
     `;
 
+        // Create content container
+        const contentContainer = document.createElement("div");
+        contentContainer.style.cssText = `
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+    `;
+
         const closeButton = document.createElement("button");
         closeButton.textContent = "Close";
         closeButton.style.cssText = `
-        position: absolute;
-        top: 10px;
-        right: 10px;
         padding: 5px 10px;
         background: #f44336;
         color: white;
         border: none;
         border-radius: 3px;
         cursor: pointer;
+        flex-shrink: 0;
+        height: fit-content;
     `;
         closeButton.onclick = () => document.body.removeChild(overlay);
+
+        const contentDiv = document.createElement("div");
+        contentDiv.style.cssText = `
+        flex: 1;
+        overflow: auto;
+    `;
 
         if (type === "json") {
             const pre = document.createElement("pre");
             const code = document.createElement("code");
             code.textContent = content;
             pre.appendChild(code);
-            modal.appendChild(pre);
+            contentDiv.appendChild(pre);
         } else if (type === "csv") {
             const table = document.createElement("table");
             table.style.borderCollapse = "collapse";
@@ -836,10 +885,12 @@
                 });
                 table.appendChild(tr);
             });
-            modal.appendChild(table);
+            contentDiv.appendChild(table);
         }
 
-        modal.appendChild(closeButton);
+        contentContainer.appendChild(contentDiv);
+        contentContainer.appendChild(closeButton);
+        modal.appendChild(contentContainer);
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
     };
@@ -1143,6 +1194,85 @@
 
         buttonContainer.appendChild(startButton);
         panel.appendChild(buttonContainer);
+
+        // Add search box if transactions have been captured
+        if (state.total > 0) {
+            const searchContainer = document.createElement("div");
+            searchContainer.style.cssText = `
+                margin-top: 15px;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 3px;
+                background: #f9f9f9;
+            `;
+
+            const searchLabel = document.createElement("div");
+            searchLabel.textContent = "Search by Amount:";
+            searchLabel.style.cssText = `
+                font-size: 0.9em;
+                color: #333;
+                margin-bottom: 5px;
+            `;
+
+            const searchInputContainer = document.createElement("div");
+            searchInputContainer.style.cssText = `
+                display: flex;
+                gap: 5px;
+                align-items: center;
+            `;
+
+            const searchInput = document.createElement("input");
+            searchInput.type = "text";
+            searchInput.placeholder = "Enter amount (e.g., 27.91)";
+            searchInput.style.cssText = `
+                flex: 1;
+                height: 30px;
+                border: 1px solid #ccc;
+                border-radius: 3px;
+                padding: 0 8px;
+                font-size: 0.9em;
+            `;
+
+            const findButton = document.createElement("button");
+            findButton.textContent = "Find";
+            findButton.style.cssText = `
+                height: 32px;
+                padding: 0 12px;
+                background: #ff6b35;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 0.9em;
+            `;
+
+            // Add hover effect to find button
+            findButton.addEventListener("mouseenter", () => findButton.style.background = "#e55a2b");
+            findButton.addEventListener("mouseleave", () => findButton.style.background = "#ff6b35");
+
+            // Search functionality
+            const performSearch = () => {
+                const searchAmount = parseFloat(searchInput.value.replace(/[^0-9.-]/g, ""));
+                if (isNaN(searchAmount)) {
+                    alert("Please enter a valid amount");
+                    return;
+                }
+                showFilteredTransactions(searchAmount);
+            };
+
+            findButton.addEventListener("click", performSearch);
+            searchInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") {
+                    performSearch();
+                }
+            });
+
+            searchInputContainer.appendChild(searchInput);
+            searchInputContainer.appendChild(findButton);
+            searchContainer.appendChild(searchLabel);
+            searchContainer.appendChild(searchInputContainer);
+            panel.appendChild(searchContainer);
+        }
     };
 
     // Main initialization
